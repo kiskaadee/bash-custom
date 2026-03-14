@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # --- CORE UTILITIES ---
 
 dep_check() {
@@ -17,7 +15,7 @@ wlc() {
     # Usage: wlc [--headers] <command> [args...]
     # Captures stdout and stderr to the Wayland clipboard while printing to terminal.
     dep_check "wl-copy" || return 1
-    
+
     local header_mode=false
     local cmd_str
 
@@ -53,7 +51,7 @@ bl() {
     # Usage: bl [--functions | --aliases] [--verbose]
     # Lists custom functions/aliases using an inlined AWK parser.
     local CUSTOM_DIR="$HOME/bash-custom"
-    
+
     if [[ ! -d "$CUSTOM_DIR" ]]; then
         echo "Error: Directory $CUSTOM_DIR not found." >&2
         return 1
@@ -211,53 +209,4 @@ pdf_dc() {
         echo "❌ Decryption failed (qpdf exit code: $exit_code)"
         return $exit_code
     fi
-}
-
-_fuzzy_jump_engine() {
-    local target_base="$1"
-    local label="$2"
-    local query="$3"
-    local max_depth="${4:-2}"
-
-    dep_check "fzf" || return 1
-    dep_check "eza" || return 1
-
-    if [[ ! -d "$target_base" ]]; then
-        echo "Error: Base directory '$target_base' not found." >&2
-        return 1
-    fi
-
-    local list_cmd
-    if command -v fd &> /dev/null; then
-        list_cmd="fd . '$target_base' --max-depth $max_depth --type d --mindepth 1"
-    else
-        list_cmd="find '$target_base' -maxdepth $max_depth -type d -mindepth 1"
-    fi
-
-    local selected_dir
-    selected_dir=$(eval "$list_cmd" | fzf \
-        --query="$query" \
-        --select-1 \
-        --exit-0 \
-        --preview "eza --tree --level 2 --icons=always --color=always {}" \
-        --preview-window="right:50%:rounded" \
-        --header "Jump to $label")
-
-    if [[ -n "$selected_dir" && -d "$selected_dir" ]]; then
-        cd "$selected_dir" || return 1
-        echo -e "\033[1;32mJumped to:\033[0m $selected_dir"
-        echo "------------------------------------------"
-        eza -la --icons=always
-    fi
-}
-
-pj() {
-    # Usage: pj [query]
-    _fuzzy_jump_engine "$HOME/projects" "Project" "$1"
-}
-
-conf() {
-    # Usage: conf [query]
-    # Increased depth to 3 for nested configs (e.g., nvim/lua/user)
-    _fuzzy_jump_engine "$HOME/.config" "Config" "$1" 3
 }
