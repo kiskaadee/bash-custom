@@ -3,8 +3,10 @@
 TARGET="$HOME/.bashrc"
 SKELETON="/etc/skel/.bashrc"
 
-HOOK='[[ $- != *i* ]] && return
-[[ -f ~/Scripts/main.sh ]] && source ~/Scripts/main.sh'
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+HOOK="[[ \$- != *i* ]] && return
+[[ -f \"$SCRIPT_DIR/main.sh\" ]] && source \"$SCRIPT_DIR/main.sh\""
 
 echo "Checking $TARGET..."
 
@@ -17,24 +19,22 @@ if [[ -s "$TARGET" ]]; then
     if [[ -f "$SKELETON" ]] && cmp -s "$TARGET" "$SKELETON"; then
         echo ".bashrc matches Arch skeleton. No backup needed."
     else
-        echo ".bashrc differs from skeleton. Creating backup."
+        echo ".bashrc differs from skeleton."
         NEEDS_BACKUP=true
     fi
 else
     echo ".bashrc is empty."
 fi
 
-if $NEEDS_BACKUP && [[ ! -f "$HOME/.bashrc.bak" ]]; then
-    cp "$TARGET" "$HOME/.bashrc.bak.$(date +%F-%H%M%S)"
-    echo "Backup saved to ~/.bashrc.bak"
+if $NEEDS_BACKUP; then
+    BACKUP="$HOME/.bashrc.bak.$(date +%F-%H%M%S)"
+    cp "$TARGET" "$BACKUP"
+    echo "Backup saved to $BACKUP"
 fi
 
 echo "Rewriting $TARGET..."
 
-# Truncate file
 : > "$TARGET"
-
-# Write hook
 printf "%s\n" "$HOOK" >> "$TARGET"
 
 echo ".bashrc updated."
