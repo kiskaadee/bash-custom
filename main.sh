@@ -1,34 +1,73 @@
 # ~/Scripts/main.sh
 # Entry point for shell customization
 
-# 1. Core utilities (Primitives)
+STARTUP_START=${EPOCHREALTIME/./}
+
+# --------------------------------------------------
+# Core utilities
+# --------------------------------------------------
+
 dep_check() {
     for cmd in "$@"; do
         if ! command -v "$cmd" &> /dev/null; then
-            echo "Error: $cmd is not installed" >&2
+            echo "Error: required dependency '$cmd' not found" >&2
             return 1
         fi
     done
 }
 
-# 2. Critical Dependency Check
-dep_check "starship" "fastfetch" "eza" "fzf" "git" || return 1
+# Critical dependencies
+if ! dep_check starship eza fzf git; then
+    echo "Shell initialization aborted." >&2
+    return 1
+fi
 
-# 3. Prompt Initialization
+# --------------------------------------------------
+# Prompt
+# --------------------------------------------------
+
 eval "$(starship init bash)"
 
-# 4. Recursive Module Loading
-# We use an absolute path to ensure reliability regardless of where bash starts
-MODULES_DIR="$HOME/Scripts"
+# --------------------------------------------------
+# Module loader
+# --------------------------------------------------
 
-while IFS= read -r -d '' script; do
-    # INVARIANT: Prevent infinite recursion by skipping this file
-    [[ "$script" == *"/main.sh" ]] && continue
-    
-    if [ -r "$script" ] && [ -f "$script" ]; then
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+MODULES_DIR="$REPO_ROOT/modules"
+
+DEBUG_LOAD=true
+
+for script in "$MODULES_DIR"/*.sh; do
+    [[ -r "$script" ]] || continue
+
+    if $DEBUG_LOAD; then
+        start=${EPOCHREALTIME/./}
+
+        source "$script"
+
+        end=${EPOCHREALTIME/./}
+        duration_us=$((end - start))
+
+        printf "Loaded %-25s %6d µs\n" "$(basename "$script")" "$duration_us"
+    else
         source "$script"
     fi
-done < <(find "$MODULES_DIR" -type f -name "*.sh" -print0 | sort -z)
+done
 
-# 5. Visual components
-fastfetch
+# --------------------------------------------------
+# Optional visual tools
+# --------------------------------------------------
+
+if command -v fastfetch &> /dev/null; then
+    fastfetch
+fi
+
+# --------------------------------------------------
+# Startup summary
+# --------------------------------------------------
+
+STARTUP_END=${EPOCHREALTIME/./}
+TOTAL_US=$((STARTUP_END - STARTUP_START))
+TOTAL_MS=$((TOTAL_US / 1000))
+
+printf "\nShell startup completed in %d µs (%d ms)\n" "$TOTAL_US" "$TOTAL_MS"
