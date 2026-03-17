@@ -7,9 +7,9 @@ alias ll='eza -la --icons --octal-permissions --git' # ll wrapper
 
 
 # Jumpers
-alias cnf='_fuzzy_jump "$HOME/.config" "Config" "$1" 3'
-alias pj='_fuzzy_jump "$HOME/Projects" "Project" "$1"'
-alias vlt='_fuzzy_jump "$HOME/Vaults" "Vaults" "$1"'
-alias dl='_fuzzy_jump "$HOME/Downloads" "Downloads" "$1"'
-alias rp='_fuzzy_jump "$HOME/Repositories" "Repositories" "$1"'
-alias sc='_fuzzy_jump "$HOME/Scripts" "Scripts" "$1"'
+cnf() { _fuzzy_jump "$HOME/.config" "Config" "$1" 3; }
+pj()  { _fuzzy_jump "$HOME/Projects" "Project" "$1"; }
+vlt() { _fuzzy_jump "$HOME/Vaults" "Vaults" "$1"; }
+dl()  { _fuzzy_jump "$HOME/Downloads" "Downloads" "$1"; }
+rp()  { _fuzzy_jump "$HOME/Repositories" "Repositories" "$1"; }
+sc()  { _fuzzy_jump "$HOME/Scripts" "Scripts" "$1"; }
