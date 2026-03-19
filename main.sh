@@ -4,7 +4,7 @@
 STARTUP_START=${EPOCHREALTIME/./}
 
 # --------------------------------------------------
-# Core utilities
+# Dependency Check
 # --------------------------------------------------
 
 dep_check() {
@@ -17,16 +17,10 @@ dep_check() {
 }
 
 # Critical dependencies
-if ! dep_check starship eza fzf git rg fd; then
-    echo "Shell initialization aborted." >&2
+if ! dep_check git gh eza fzf rg fd bat; then
+    echo "Custom Shell initialization aborted." >&2
     return 1
 fi
-
-# --------------------------------------------------
-# Prompt
-# --------------------------------------------------
-
-eval "$(starship init bash)"
 
 # --------------------------------------------------
 # Module loader
@@ -35,9 +29,9 @@ eval "$(starship init bash)"
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 MODULES_DIR="$REPO_ROOT/modules"
 
-DEBUG_LOAD=true
+DEBUG_LOAD=true # change this to file to hide debug logs
 
-for script in "$MODULES_DIR"/*.sh; do
+while IFS= read -r -d '' script; do
     [[ -r "$script" ]] || continue
 
     if $DEBUG_LOAD; then
@@ -52,15 +46,7 @@ for script in "$MODULES_DIR"/*.sh; do
     else
         source "$script"
     fi
-done
-
-# --------------------------------------------------
-# Optional visual tools
-# --------------------------------------------------
-
-if command -v fastfetch &> /dev/null; then
-    fastfetch
-fi
+done < <(fd . "$MODULES_DIR" --type f --extension sh --print0 | sort -z)
 
 # --------------------------------------------------
 # Startup summary
