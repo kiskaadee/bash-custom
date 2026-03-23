@@ -29,7 +29,10 @@ dep_check() {
     return 0
 }
 
-dep_check "fd" || return 1
+if ! dep_check git gh eza fzf rg fd bat zoxide starship fastfetch wl-clipboard; then
+    echo "Custom Shell initialization aborted." >&2
+    return 1
+fi
 
 # --------------------------------------------------
 # Module loader

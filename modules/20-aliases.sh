@@ -12,6 +12,8 @@ alias fm="yazi"
 alias clock="tty-clock"
 alias sys="btop" 
 alias ql="quicklinks" # from our tools
+alias cd="z"
+alias zi="zoxide query -i --preview 'eza --tree --level 2 --color=always {}'"
 
 # EZA navigation
 alias ls="eza --icons --group-directories-first" # ls wrapper
@@ -38,17 +40,17 @@ alias apps="~/.config/ml4w/bin/ml4w-apps.sh"
 alias ss="~/.config/ml4w/bin/ml4w-screenshots.sh"
 
 # Git
-alias gs="git status"
-alias ga="git add"
-alias gc="git commit -m"
-alias gp="git push"
-alias gpl="git pull"
-alias gst="git stash"
-alias gsp="git stash; git pull"
-alias gfo="git fetch origin"
-alias gcheck="git checkout"
+alias gs="git status" # Git status
+alias ga="git add" # Stage changes 
+alias gc="git commit -m" # Commit changes
+alias gp="git push" # Push to remote origin
+alias gpl="git pull" # Pull changes from remote
+alias gst="git stash" # 
+alias gsp="git stash; git pull" # 
+alias gfo="git fetch origin" # download changes from origin
+alias gcheck="git checkout" # branch checkout
 alias gcredential="git config credential.helper store"
-
+alias gadc="git add -A && git diff --staged | wl-copy" # git raw stage + diff + clip ; use wisely 
 
 
 # -----------------------------------------------------
