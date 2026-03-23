@@ -29,7 +29,7 @@ dep_check() {
     return 0
 }
 
-if ! dep_check git gh eza fzf rg fd bat zoxide starship fastfetch wl-clipboard; then
+if ! dep_check git gh eza fzf rg fd bat zoxide starship fastfetch wl-copy; then
     echo "Custom Shell initialization aborted." >&2
     return 1
 fi
