@@ -1,85 +1,72 @@
-# 🚀 Shell Environment & Script Modules
+# 🚀 Arch-Bash Framework
 
-This repository is a modular configuration framework designed to automate the setup of a fresh Arch Linux environment. It replaces a static `.bashrc` with a dynamic entry point that loads customized modular workflows and tools.
-
-## 🛠 Core Requirements
-
-This framework assumes an Arch Linux environment running [Hyprland](https://hypr.land/) (Wayland).
-
-* **Shell**: Bash 5.0+
-
-* **System Tools**: `wl-clipboard`, `git`, `bc`
-
-* **Rust-based CLI Suite**:
-
-    * `starship` (Prompt)
-
-    * `fastfetch` (System Info)
-
-    * `eza` (LS replacement)
-
-    * `fzf` (Fuzzy Finder)
-
-    * `fd` (Find replacement)
-
-    * `rg` (Ripgrep)
-
-    * `bat` (Cat clone)
+A modular, high-performance configuration framework for Bash. Designed for Arch Linux, it replaces a monolithic `.bashrc` with a structured, profiled, and Rust-powered toolchain.
 
 
 
-## 📂 Structure
+## 📂 Architecture & Load Order
 
-* `init`: The idempotent setup script.
+The framework uses a numerical prefix strategy to manage dependencies and ensure primitives are available before their callers.
 
-* `main.sh`: The entry point (sourced by .bashrc).
+1.  **`main.sh`**: The orchestrator. Performs dependency checks and recursively sources modules.
+2.  **`modules/00-tools/`**: Core primitives, functions, and wrappers (Jumper, Git, PDF, Clipboard).
+3.  **`modules/10-init.sh`**: Environment variables (`EDITOR`, `PATH`).
+4.  **`modules/20-aliases.sh`**: Command shorthands and system wrappers.
+5.  **`modules/30-jumpers.sh`**: Context-aware navigation shortcuts.
+6.  **`modules/40-autostart.sh`**: Visual initialization (`fastfetch`, `starship`).
 
-* `modules/`: Individual feature sets (Aliases, Fuzzy Jumpers, Git Tools).
+## 🛠 Prerequisites
 
-## ⚡ Quick Start
+This suite is optimized for **Arch Linux** on **Wayland/Hyprland**.
 
-On a new machine, simply clone and initialize:
+* **Core**: `bash 5.0+`, `git`, `bc`, `wl-clipboard`
+* **Rust Toolchain**: 
+    * `starship`, `fastfetch`, `eza`, `fzf`, `fd`, `rg`, `bat`
+* **Specialized**: `qpdf` (for `pdf_dc`), `gh` (GitHub CLI)
+
+### ⚡ Quick Start
 
 ```bash
+# 1. Install Dependencies
+sudo pacman -Syu && sudo pacman -S wl-clipboard git bc starship fastfetch eza fzf fd ripgrep bat qpdf github-cli
+
+# 2. Clone to standard location
 git clone https://github.com/kiskaadee/bash-custom ~/Scripts
-cd ~/Scripts
-./init
+
+# 3. Initialize (Adds hook to ~/.bashrc)
+cd ~/Scripts && ./init
 ```
 
-Install dependencies: 
+## 🔍 Key Workflows
 
-```bash
-sudo pacman -Syu && sudo pacman -S wl-clipboard git bc starship fastfetch eza fzf fd ripgrep bat 
+### 🏎 Fuzzy Navigation Engine
+Powered by `fd` and `fzf`, the engine separates **Selection** from **Action**.
 
-```
-The init script will back up your existing `.bashrc`, truncate it, and insert a hook pointing to `main.sh`.
+| Command | Action | Base Directory |
+| :--- | :--- | :--- |
+| `pj` | Jump to Project | `~/Projects` |
+| `sc` | Jump to Scripts | `~/Scripts` |
+| `cnf` | Jump to Config | `~/.config` |
+| `edit_dir` | Open in Neovim | `~/Projects` |
+| `copy_dir` | Copy path to Clipboard | `$HOME` |
+| `jump_search`| Search file content then Jump | User-defined |
+
+### 🛠 Utility Highlights
+* **`ql` (Quicklinks)**: An `fzf` dashboard for custom scripts and commands (reads from `~/.quicklinks`).
+* **`wlc`**: Executes a command, prints to terminal, and captures output to Wayland clipboard simultaneously.
+* **`pdf_dc`**: Secure PDF decryption using `qpdf` and local `.env` secrets.
+* **`gitignore`**: Context-aware pattern management that ensures proper file formatting and auto-commits changes.
+
+## ⏱ Performance Profiling
+The framework includes a built-in microsecond profiler. To toggle module load logs, set `DEBUG_LOAD=true` in `main.sh`.
+
+
 
 ---
 
-## 🔍 Fuzzy Navigation Engine
+## ⚙️ Configuration
+The framework can be customized via environment variables in `main.sh` or `modules/10-init.sh`:
+* `JUMP_VERBOSE`: Set to `true` for `eza` tree previews after a jump.
+* `DEBUG_LOAD`: Set to `true` to display startup metrics.
 
-A collection of composable shell functions for rapid filesystem navigation and file manipulation using `fd`, `rg`, and `fzf`.
-
-## 🧩 Logic Flow
-
-The engine separates Selection (finding the path) from Action (doing something with it).
-
-### ⌨️ Available Commands
-
-|   Command     |   Action              |   Base Directory  |
-|   ---        |	---     |	---    |
-|   pj          |	Jump to Project     |	`~/Projects`    |
-|   sc          |	Jump to Scripts     |	`~/Scripts`     |
-|   cnf         |	Jump to Config      |   `~/.config` (Depth: 3) |
-|   edit_dir    |	Open Dir in Neovim  |	`~/Projects`    |
-|   copy_dir    |	Copy Path to Clipboard | 	`$HOME`     |
-| jump_search	| Jump by File Content	| Specified Base    |
-
-### ⚙️ Configuration
-
-You can toggle the post-jump behavior in main.sh:
-
-* `JUMP_VERBOSE=true`: Shows the target path and an eza tree listing after jumping.
-
-* `JUMP_VERBOSE=false`: Silent navigation (only changes directory).
-
+---

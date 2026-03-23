@@ -19,13 +19,13 @@ alias ll="eza -la --icons --octal-permissions --git" # ll wrapper
 alias lt="eza -a --tree --level=2 --icons=always"
 
 # Volume
-alias vol1="wpclt set-volume @DEFAULT_AUDIO_SINK@ 0.2"
-alias vol2="wpclt set-volume @DEFAULT_AUDIO_SINK@ 0.4"
-alias vol3="wpclt set-volume @DEFAULT_AUDIO_SINK@ 0.6"
-alias vol4="wpclt set-volume @DEFAULT_AUDIO_SINK@ 0.8"
-alias vol5="wpclt set-volume @DEFAULT_AUDIO_SINK@ 1.0"
-alias volM="wpclt set-mute @DEFAULT_AUDIO_SINK@ 1"
-alias volU="wpclt set-mute @DEFAULT_AUDIO_SINK@ 0"
+alias vol1="wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.2"
+alias vol2="wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.4"
+alias vol3="wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.6"
+alias vol4="wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.8"
+alias vol5="wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.0"
+alias volM="wpctl set-mute @DEFAULT_AUDIO_SINK@ 1"
+alias volU="wpctl set-mute @DEFAULT_AUDIO_SINK@ 0"
 
 # System
 alias shutdown="systemctl poweroff"
