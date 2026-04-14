@@ -1,4 +1,6 @@
 # General
+alias pgoog="ping google.com -c 3"
+alias parch="ping archlinux.org -c 3"
 alias ..="cd .."
 alias ff="fastfetch --logo none"
 alias src="source ~/.bashrc" # quick source 
