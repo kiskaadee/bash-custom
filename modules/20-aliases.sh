@@ -1,4 +1,6 @@
 # General
+alias p5='uv run py5-run-sketch'
+alias p5w='uv run watchfiles "py5-run-sketch main.py"
 alias pgoog="ping google.com -c 3"
 alias parch="ping archlinux.org -c 3"
 alias ..="cd .."
@@ -16,11 +18,16 @@ alias sys="btop"
 alias ql="quicklinks" # from our tools
 alias cd="z"
 alias zi="zoxide query -i --preview 'eza --tree --level 2 --color=always {}'"
+alias zed="zeditor"
 
 # EZA navigation
 alias ls="eza --icons --group-directories-first" # ls wrapper
 alias ll="eza -la --icons --octal-permissions --git" # ll wrapper
 alias lt="eza -a --tree --level=2 --icons=always"
+alias home="cd ~/" # navigate to home
+alias root="home"
+alias h="home"
+
 
 # Volume
 alias vol1="wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.2"
