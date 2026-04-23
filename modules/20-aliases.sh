@@ -1,6 +1,6 @@
 # General
 alias p5='uv run py5-run-sketch'
-alias p5w='uv run watchfiles "py5-run-sketch main.py"
+alias p5w='uv run watchfiles "py5-run-sketch main.py"'
 alias pgoog="ping google.com -c 3"
 alias parch="ping archlinux.org -c 3"
 alias ..="cd .."
@@ -44,10 +44,6 @@ alias reboot="systemctl reboot"
 alias suspend="systemctl suspend"
 alias hibernate="systemctl hibernate"
 
-# ML4W
-alias apps="~/.config/ml4w/bin/ml4w-apps.sh"
-alias ss="~/.config/ml4w/bin/ml4w-screenshots.sh"
-
 # Git
 alias gs="git status" # Git status
 alias ga="git add" # Stage changes 
@@ -60,14 +56,3 @@ alias gfo="git fetch origin" # download changes from origin
 alias gcheck="git checkout" # branch checkout
 alias gcredential="git config credential.helper store"
 alias gadc="git add -A && git diff --staged | wl-copy" # git raw stage + diff + clip ; use wisely 
-
-
-# -----------------------------------------------------
-# ML4W Apps
-# -----------------------------------------------------
-alias wallpaper='~/.config/ml4w/bin/ml4w-wallpaper.sh'
-alias ml4w='flatpak run com.ml4w.welcome'
-alias ml4w-settings='flatpak run com.ml4w.settings'
-alias ml4w-calendar='flatpak run com.ml4w.calendar'
-alias ml4w-hyprland='flatpak run com.ml4w.hyprlandsettings'
-alias ml4w-sidebar='flatpak run com.ml4w.sidebar'
