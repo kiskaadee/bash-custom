@@ -1,4 +1,4 @@
-dep_check "gh" "git" || return 1
+dep_check "lib/github.sh" "gh:github-cli" "git" || return 1
 
 function new-repo() {
     # Usage: new-repo <repository-name>

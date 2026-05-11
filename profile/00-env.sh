@@ -3,3 +3,4 @@ export PATH="/usr/lib/ccache/bin/:$PATH"
 export PATH=$PATH:~/.cargo/bin/
 export PATH=$PATH:~/.local/bin/
 export JAVA_HOME=/usr/lib/jvm/default
+export SC_PKG_MGR="${SC_PKG_MGR:-paru -S}"

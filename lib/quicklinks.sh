@@ -1,4 +1,4 @@
-dep_check "bat" "fd" "fzf" || return 1
+dep_check "lib/quicklinks.sh" "bat" "fd:fd" "fzf" || return 1
 
 quicklinks() {
     ## Borrowed logic from the ML4W suite (https://ml4w.com/)

@@ -1,4 +1,4 @@
-dep_check "fzf" "fd" "eza" "nvim" "wl-copy" "rg" || return 1
+dep_check "lib/jump.sh" "fzf" "fd:fd" "eza" "nvim:neovim" "wl-copy:wl-clipboard" "rg:ripgrep" || return 1
 
 _fuzzy_select_dir() {
     local base="$1"

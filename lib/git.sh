@@ -1,4 +1,4 @@
-dep_check "git"  "rg" "fzf" "fd" || return 1
+dep_check "lib/git.sh" "git" "rg:ripgrep" "fzf" "fd:fd" || return 1
 
 gitignore() {
     # Usage: gitignore <pattern> [pattern...]

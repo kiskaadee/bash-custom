@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+
+# dep_check
+#
+# Verifies runtime dependencies before executing a script.
+#
+# Supports:
+# - command existence checks
+# - command:package mapping
+# - pacman/AUR package resolution
+#
+# Does not:
+# - install packages
+# - support non-Arch distributions
+#
+# Dependency format:
+#   command
+#   command:package
+#
+# Examples:
+#   git
+#   wl-copy:wl-clipboard
+
+set -uo pipefail
+
+# --- Configuration ---
+
+: "${SC_PKG_MGR:=paru -S}"
+
+USAGE="Usage: dep_check <caller_name> <dep1> [dep2...]"
+
+# --- Colors (TTY-aware) ---
+
+if [[ -t 2 ]]; then
+    RED=$'\e[1;31m'
+    GREEN=$'\e[32m'
+    BLUE=$'\e[1;34m'
+    YELLOW=$'\e[33m'
+    BOLD=$'\e[1m'
+    RESET=$'\e[0m'
+else
+    RED=""
+    GREEN=""
+    BLUE=""
+    YELLOW=""
+    BOLD=""
+    RESET=""
+fi
+
+# --- Helpers ---
+
+pkg_exists_official() {
+    local pkg="$1"
+
+    pacman -Si "$pkg" &>/dev/null
+}
+
+pkg_exists_aur() {
+    local pkg="$1"
+
+    command -v paru &>/dev/null || return 1
+
+    paru -Si "$pkg" &>/dev/null
+}
+
+# Requires pacman-compatible environment (Arch-based systems)
+validate_package_manager() {
+    local mgr_bin
+
+    mgr_bin="${SC_PKG_MGR%% *}"
+
+    if ! command -v pacman &>/dev/null; then
+        printf "%s[!] pacman not found.%s\n" \
+            "$RED" \
+            "$RESET" >&2
+        return 1
+    fi
+
+    if ! command -v "$mgr_bin" &>/dev/null; then
+        printf "%s[!] Configured package manager not found:%s %s\n" \
+            "$RED" \
+            "$RESET" \
+            "$SC_PKG_MGR" >&2
+        return 1
+    fi
+}
+
+print_success() {
+    local caller="$1"
+
+    printf "%s[+] All dependencies satisfied for %s.%s\n" \
+        "$GREEN" \
+        "$caller" \
+        "$RESET"
+}
+
+print_error_header() {
+    local caller="$1"
+
+    printf "%s[!] Dependency Error in %s:%s\n" \
+        "$RED" \
+        "$caller" \
+        "$RESET"
+}
+
+# --- Main ---
+
+dep_check() {
+    if [[ $# -lt 2 ]]; then
+        echo "$USAGE" >&2
+        return 1
+    fi
+
+    local caller="$1"
+    shift
+
+    local missing_cmds=()
+    local missing_pkgs=()
+
+    declare -A seen_pkgs=()
+
+    local item
+    local cmd
+    local pkg
+
+    for item in "$@"; do
+        # Parse:
+        #   command
+        #   command:package
+        if [[ "$item" == *:* ]]; then
+            cmd="${item%%:*}"
+            pkg="${item#*:}"
+        else
+            cmd="$item"
+            pkg="$item"
+        fi
+
+        # Input validation
+        if [[ -z "$cmd" || -z "$pkg" ]]; then
+            printf "%s[!] Invalid dependency format:%s %s\n" \
+                "$RED" \
+                "$RESET" \
+                "$item" >&2
+            return 1
+        fi
+
+        if ! command -v "$cmd" &>/dev/null; then
+            missing_cmds+=("$cmd")
+
+            if [[ -z "${seen_pkgs[$pkg]+x}" ]]; then
+                missing_pkgs+=("$pkg")
+                seen_pkgs["$pkg"]=1
+            fi
+        fi
+    done
+
+    if [[ ${#missing_cmds[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    # Missing dependencies found, now we need the package manager to suggest fixes
+    {
+        print_error_header "$caller"
+
+        printf "    Missing tools: %s%s%s\n" \
+            "$YELLOW" \
+            "${missing_cmds[*]}" \
+            "$RESET"
+
+        if ! validate_package_manager; then
+            printf "\n"
+            return 1
+        fi
+
+        printf "    %sSearching for fixes...%s\n" \
+            "$BLUE" \
+            "$RESET"
+
+        local found_all=true
+        for pkg in "${missing_pkgs[@]}"; do
+            printf "    - %s%s%s: " \
+                "$BOLD" \
+                "$pkg" \
+                "$RESET"
+
+            if pkg_exists_official "$pkg"; then
+                printf "%sFound in official repositories.%s\n" \
+                    "$GREEN" \
+                    "$RESET"
+
+            elif pkg_exists_aur "$pkg"; then
+                printf "%sFound in AUR.%s\n" \
+                    "$GREEN" \
+                    "$RESET"
+
+            else
+                printf "%sNot found in repositories.%s\n" \
+                    "$RED" \
+                    "$RESET"
+
+                found_all=false
+            fi
+        done
+
+        if [[ "$found_all" == true ]]; then
+            printf "    Fix: %s%s %s%s\n" \
+                "$GREEN" \
+                "$SC_PKG_MGR" \
+                "${missing_pkgs[*]}" \
+                "$RESET"
+        else
+            printf "    %sManual installation required. Some packages could not be resolved.%s\n" \
+                "$RED" \
+                "$RESET"
+        fi
+
+        printf "\n"
+
+    } >&2
+
+    return 1
+}
+
+# --- Entry Point ---
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    if dep_check "$@"; then
+        print_success "$1"
+        exit 0
+    else
+        exit 1
+    fi
+fi

@@ -1,3 +1,14 @@
+# In profile/10-aliases.sh
+reload() {
+    if [ -n "$ZSH_VERSION" ]; then
+        source ~/.zshrc
+    else
+        source ~/.bashrc
+    fi
+    echo "Shell configuration reloaded."
+}
+alias src="reload"
+
 # General
 alias p5='uv run py5-run-sketch'
 alias p5w='uv run watchfiles "py5-run-sketch main.py"'
@@ -5,10 +16,10 @@ alias pgoog="ping google.com -c 3"
 alias parch="ping archlinux.org -c 3"
 alias ..="cd .."
 alias ff="fastfetch --logo none"
-alias src="source ~/.bashrc" # quick source 
 alias grep="rg" # grep wrapper
 alias find="fd" # find wrapper
 alias v=$EDITOR
+alias vi=$EDITOR
 alias v.="$EDITOR ."
 alias wifi="nmtui"
 alias lock="hyprlock"

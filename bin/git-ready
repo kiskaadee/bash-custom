@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+
+# git-ready
+#
+# Applies global Git configuration from a declarative config file.
+#
+# Configures:
+# - user-defined git config values
+# - nvim as editor
+# - delta integration
+# - aliases and workflow defaults
+#
+# Expects:
+# - path to config file
+#
+# Does not:
+# - modify repository-local config
+# - validate external tool configuration
+
+dep_check "git-ready" "git" "nvim" "delta:git-delta" || exit 1
+
+# Expects a .yml configuration file passed as argument with key-value pairs.
+# See git.yml-example for format
+# Ensure a file path was provided
+if [ -z "$1" ]; then
+    echo "Usage: $0 path/to/git.yml"
+    exit 1
+fi
+
+CONFIG_FILE=$1
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: File $CONFIG_FILE not found."
+    exit 1
+fi
+
+echo "--- Initializing Global Git Config ---"
+
+# 1. Identity: Parse the YAML-like file
+# This sed command removes whitespace and splits by the first colon
+while IFS=": " read -r key value; do
+    # Skip empty lines or comments
+    [[ "$key" =~ ^#.*$ ]] && continue
+    [[ -z "$key" ]] && continue
+
+    # Remove leading/trailing whitespace from value
+    value=$(echo "$value" | xargs)
+
+    echo "Setting $key to $value..."
+    git config --global "$key" "$value"
+done < "$CONFIG_FILE"
+
+# 2. Editor & Branch
+git config --global core.editor "nvim"
+git config --global init.defaultBranch "main"
+
+# 3. Behavior & Paging (Delta)
+git config --global pull.rebase true
+
+git config --global core.pager "delta"
+git config --global interactive.diffFilter "delta --color-only"
+
+git config --global delta.navigate true
+git config --global delta.side-by-side true
+git config --global delta.line-numbers true
+git config --global delta.hyperlinks true
+
+git config --global merge.conflictstyle zdiff3
+
+# 4. Aliases
+git config --global alias.st "status"
+git config --global alias.co "checkout"
+git config --global alias.br "branch"
+
+# Diff + Copy to Clipboard (wayland) - Usage: git dc [args]
+git config --global alias.dc '!f() { git diff "$@" | wl-copy; }; f'
+
+# Add, Commit, Push - Usage: git acp main "my commit message"
+git config --global alias.acp '!f() { git add -A && git commit -m "$2" && git push origin "$1"; }; f'
+
+
+#  --- Undo ---
+# Unstage - Usage: git unstage
+git config --global alias.unstage "reset HEAD --"
+
+# Add changes to last commit without changing the commit message - Usage: git amend
+git config --global alias.amend "commit --amend --no-edit"
+
+# Undo last commit - Usage: git undo
+git config --global alias.undo "reset --soft HEAD~1"
+
+# --- Visibility ---
+# Show commit history as a graph - Usage: git lg
+git config --global alias.lg "log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
+
+# Show standup log for the last 24 hours - Usage: git standup
+git config --global alias.standup "!git log --since='24 hours ago' --oneline --author=\"$(git config user.email)\""
+
+# --- Workflow ---
+# Sync with remote repo - Usage: git sync
+git config --global alias.sync "!git fetch -p && git pull"
+
+# Checkout main - Usage: git main
+git config --global alias.main "checkout main"
+
+# Show last commit - Usage: git last
+git config --global alias.last "log -1 HEAD"
+
+# Reset local branch to match remote - Usage: git nuke
+git config --global alias.nuke "!f() { git reset --hard origin/$(git rev-parse --abbrev-ref HEAD) && git clean -fd; }; f"
+
+echo "--- Configuration Complete ---"
+git config --list --global

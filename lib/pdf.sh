@@ -1,4 +1,4 @@
-dep_check "qpdf" "rg" || return 1
+dep_check "lib/pdf.sh" "qpdf" "rg:ripgrep" || return 1
 
 pdf_dc() {
     # Usage: pdf_dc <input.pdf> [password]

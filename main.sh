@@ -1,78 +1,53 @@
 #!/usr/bin/env bash
-# Entry point for shell customization
 
-# Track startup time in microseconds (strip decimal)
+# Track startup time
 STARTUP_START=${EPOCHREALTIME/./}
 
 # --------------------------------------------------
-# Dependency Check
+# 1. Agnostic Root Resolution
 # --------------------------------------------------
-INIT_ERRORS=0
-
-dep_check() {
-    local missing=()
-    local caller_name="$(basename "${BASH_SOURCE[1]}")"
-
-    for cmd in "$@"; do
-        if ! command -v "$cmd" &> /dev/null; then
-            missing+=("$cmd")
-            ((INIT_ERRORS++))
-        fi
-    done
-
-    if [[ ${#missing[@]} -gt 0 ]]; then
-        printf "\e[1;31m[!] Dependency Error in %s:\e[0m\n" "$caller_name"
-        printf "    Missing: \e[33m%s\e[0m\n" "${missing[*]}"
-        printf "    Fix: \e[32msudo pacman -S %s\e[0m\n\n" "${missing[*]}"
-        return 1
-    fi
-    return 0
-}
-
-if ! dep_check git gh eza fzf rg fd bat zoxide starship fastfetch wl-copy; then
-    echo "Custom Shell initialization aborted." >&2
-    return 1
+if [ -n "$ZSH_VERSION" ]; then
+    REPO_ROOT="${${(%):-%x}:a:h}"
+elif [ -n "$BASH_VERSION" ]; then
+    REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 fi
 
 # --------------------------------------------------
-# Module loader
+# 2. Path Injection
 # --------------------------------------------------
-REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-MODULES_DIR="$REPO_ROOT/modules"
+# This allows Hyprland and shell to find the custom binaries
+REPO_BIN="$REPO_ROOT/bin"
+if [[ -d "$REPO_BIN" ]] && [[ ":$PATH:" != *":$REPO_BIN:"* ]]; then
+    export PATH="$REPO_BIN:$PATH"
+fi
 
-# Set to true/false (no quotes needed for the check below)
-DEBUG_LOAD=false 
+# --------------------------------------------------
+# 3. Core Engine (Library Loading)
+# --------------------------------------------------
+# We source utils first so tools like dep_check are available to everything else
+[[ -f "$REPO_ROOT/lib/utils.sh" ]] && source "$REPO_ROOT/lib/utils.sh"
 
-# Ensure we use a predictable sort order for our numbered files
-export LC_ALL=C
+# Load remaining libraries (Functions that stay in memory)
+for lib in "$REPO_ROOT/lib/"*.sh; do
+    [[ "$(basename "$lib")" == "utils.sh" ]] && continue
+    [[ -r "$lib" ]] && source "$lib"
+done
 
-while IFS= read -r -d '' script; do
-    [[ -r "$script" ]] || continue
-
-    if [[ "$DEBUG_LOAD" == "true" ]]; then
-        start=${EPOCHREALTIME/./}
-        
-        source "$script"
-        
-        end=${EPOCHREALTIME/./}
-        duration_us=$((end - start))
-        
-        # Display relative path from MODULES_DIR for better visibility
-        rel_path="${script#$MODULES_DIR/}"
-        printf "Loaded %-30s %7d µs\n" "$rel_path" "$duration_us"
-    else
-        source "$script"
-    fi
-# Recursively find .sh files, sort them alphabetically
-done < <(fd . "$MODULES_DIR" --type f --extension sh --print0 | sort -z)
+# --------------------------------------------------
+# 4. Environment & Session (Profile Loading)
+# --------------------------------------------------
+# Sourcing in numerical order (00-env, 10-aliases, etc.)
+if [[ -d "$REPO_ROOT/profile" ]]; then
+    for profile in "$REPO_ROOT/profile/"*.sh; do
+        [[ -r "$profile" ]] && source "$profile"
+    done
+fi
 
 # --------------------------------------------------
 # Startup summary
 # --------------------------------------------------
 STARTUP_END=${EPOCHREALTIME/./}
 TOTAL_US=$((STARTUP_END - STARTUP_START))
-TOTAL_MS=$((TOTAL_US / 1000))
-
 if [[ "$DEBUG_LOAD" == "true" ]]; then
-    printf "\n\033[1;32mShell startup completed in %d µs (%d ms)\033[0m\n" "$TOTAL_US" "$TOTAL_MS"
+    printf "\033[1;32mShell ready in %d µs\033[0m\n" "$TOTAL_US"
 fi

@@ -2,3 +2,4 @@ clean_hist.sh
 private.sh
 .env
 *.bak
+git.yml

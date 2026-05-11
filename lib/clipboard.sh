@@ -1,9 +1,9 @@
-dep_check "fzf" "wl-copy" || return 1
+dep_check "lib/clipboard.sh" "fzf" "wl-copy:wl-clipboard" || return 1
 
 wlc() {
     # Usage: wlc [--headers] <command> [args...]
     # Captures stdout and stderr to the Wayland clipboard while printing to terminal.
-    dep_check "wl-copy" || return 1
+    dep_check "wlc" "wl-copy:wl-clipboard" || return 1
 
     local header_mode=false
     local cmd_str

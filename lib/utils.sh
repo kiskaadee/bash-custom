@@ -1,10 +1,17 @@
+# ~/Scripts/lib/utils.sh
+
 bl() {
     # Usage: bl [--functions | --aliases] [--verbose]
-    # Lists custom functions/aliases using an inlined AWK parser.
-    local CUSTOM_DIR="$HOME/bash-custom"
+    # Lists custom functions/aliases from the profile and library directories.
+    local REPO_ROOT
+    if [ -n "$ZSH_VERSION" ]; then
+        REPO_ROOT="${${(%):-%x}:a:h:h}"
+    elif [ -n "$BASH_VERSION" ]; then
+        REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+    fi
 
-    if [[ ! -d "$CUSTOM_DIR" ]]; then
-        echo "Error: Directory $CUSTOM_DIR not found." >&2
+    if [[ ! -d "$REPO_ROOT" ]]; then
+        echo "Error: Repository root not found." >&2
         return 1
     fi
 
@@ -47,7 +54,7 @@ bl() {
         }
     }'
 
-    find "$CUSTOM_DIR" -maxdepth 1 -name "*.sh" -print0 | \
+    find "$REPO_ROOT/profile" "$REPO_ROOT/lib" -maxdepth 1 -name "*.sh" -print0 | \
     xargs -0 awk -v show_funcs="$show_funcs" \
                  -v show_aliases="$show_aliases" \
                  -v verbose="$verbose" \
@@ -58,6 +65,8 @@ bl() {
 
 scrub_history() {
     # Usage: scrub_history <term1> [term2...]
+    dep_check "scrub_history" "sqlite3:sqlite" "pgrep:procps-ng" || return 1
+
     if [[ $# -eq 0 ]]; then
         echo "Usage: scrub_history <term1> [term2...]" >&2
         return 1
@@ -104,4 +113,3 @@ EOF
     find "$ff_base" -name "places.sqlite" -exec sqlite3 {} "VACUUM;" \; 2>/dev/null
     [[ -f "$chrome_db" ]] && sqlite3 "$chrome_db" "VACUUM;"
 }
-
