@@ -105,21 +105,6 @@ get_geometry_sway() {
     esac
 }
 
-get_geometry_niri() {
-    case "$1" in
-        screen)
-            if [[ "$SCREEN_ALL" == true ]]; then printf ""; return; fi
-            niri msg -j outputs | jq -r '.[] | select(.is_focused == true) | .name'
-            ;;
-        monitors)
-            niri msg -j outputs | jq -r '.[] | "\(.logical.x),\(.logical.y) \(.logical.width)x\(.logical.height)"'
-            ;;
-        window)
-            return 1
-            ;;
-    esac
-}
-
 get_geometry() {
     local target="$1"
     local desktop
@@ -130,7 +115,11 @@ get_geometry() {
             case "$desktop" in
                 hyprland) get_geometry_hyprland "$target" ;;
                 sway)     get_geometry_sway "$target"     ;;
-                niri)     get_geometry_niri "$target"     ;;
+                niri)     
+                    local msg="Niri is not supported by grimshot. Please use Niri's built-in screenshot actions (e.g., niri msg action screenshot)."
+                    notify_error "$msg"
+                    die "$msg"
+                    ;;
                 *)        die "Unsupported compositor: $desktop" ;;
             esac
             ;;
@@ -165,9 +154,7 @@ run_capture() {
     desktop=$(current_desktop)
 
     # Capture Phase
-    if [[ "$desktop" == "niri" && "$TARGET" == "screen" && "$SCREEN_ALL" == false ]]; then
-        niri msg screenshot "$tmp_file" || die "Niri screenshot failed"
-    elif [[ "$TARGET" == "screen" && "$SCREEN_ALL" == false ]]; then
+    if [[ "$TARGET" == "screen" && "$SCREEN_ALL" == false ]]; then
         if [[ -z "$geometry" ]]; then
             rm -f "$tmp_file"
             die "Unable to determine active monitor"

@@ -51,7 +51,7 @@ cp ~/Scripts/bashrc-example.txt ~/.bashrc
 ## 🔍 Key Workflows
 
 ### 📸 Screenshot Engine (`bin/grimshot`)
-A standalone utility for Wayland, with native support for Hyprland, Niri, and Sway.
+A standalone utility for Wayland, with native support for Hyprland and Sway.
 - `grimshot selection`: Interactive selection tool.
   - **Smart Selection:** Drag to capture a custom rectangle; single-click to automatically fall back to `window` capture for the focused window.
   - **Deterministic Cancellation:** Escape aborts cleanly without notifications or clipboard updates.
@@ -60,9 +60,15 @@ A standalone utility for Wayland, with native support for Hyprland, Niri, and Sw
 - **Advanced Options:** Supports `--edit` (Swappy) and `--save [path]`.
 - **Compositor Features:**
   - **Hyprland:** Uses `hyprctl` for precise window and monitor targeting.
-  - **Niri:** Uses native `niri msg` actions for window/screen capture. Note: `selection` fallback (1x1 click) is not supported due to IPC streaming limitations.
   - **Sway:** Uses `swaymsg` for window geometry and monitor targeting.
 - **Deps:** `grim`, `slurp`, `wl-clipboard`, `jq`, `swappy`, `libnotify`.
+
+### 🌌 Niri Native Wrapper (`bin/niri-swappy`)
+A specialized tool for the Niri compositor that leverages its unique event-stream IPC.
+- Captures screenshots using Niri's built-in actions.
+- Automatically routes output to Swappy for immediate editing.
+- Blocks on capture events to ensure deterministic file handling.
+- **Usage:** `niri-swappy [screenshot|screenshot-screen|screenshot-window]`
 
 ### 🐙 Git Quickstart (`bin/git-ready`)
 Bootstraps a professional Git environment with `delta` integration and a suite of productivity aliases.
