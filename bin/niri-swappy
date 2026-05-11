@@ -5,6 +5,32 @@
 
 set -uo pipefail
 
+# Add script directory to PATH to ensure sibling scripts (like dep_check) are found
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PATH="$SCRIPT_DIR:$PATH"
+
+# --- Dependencies ---
+if [[ -z "${BATS_TEST_DIRNAME:-}" ]]; then
+    dep_check "niri-swappy" "niri" "swappy" "jq" || exit 1
+fi
+
+# --- Helpers ---
+
+die() {
+    printf "niri-swappy: %s\n" "$1" >&2
+    exit 1
+}
+
+current_desktop() {
+    printf "%s" "${XDG_CURRENT_DESKTOP,,}"
+}
+
+# --- Validation ---
+
+if [[ "$(current_desktop)" != "niri" ]]; then
+    die "This tool is exclusive to the Niri compositor."
+fi
+
 ACTION="${1:-screenshot}"
 TMP_FILE=$(mktemp --suffix=.png)
 
