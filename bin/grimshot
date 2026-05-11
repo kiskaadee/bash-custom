@@ -1,0 +1,332 @@
+#!/usr/bin/env bash
+
+# grimshot
+#
+# Cross-compositor Wayland screenshot utility.
+
+set -uo pipefail
+
+# Add script directory to PATH to ensure sibling scripts (like dep_check) are found
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PATH="$SCRIPT_DIR:$PATH"
+
+# --- Dependencies ---
+# Only run dep_check if not in a test environment to keep output clean
+if [[ -z "${BATS_TEST_DIRNAME:-}" ]]; then
+    dep_check "grimshot" "grim" "slurp" "wl-copy:wl-clipboard" "jq" "swappy" "notify-send:libnotify" || exit 1
+fi
+
+# --- Configuration ---
+DEFAULT_SAVE_DIR="$HOME/Pictures/Screenshots"
+
+# --- State ---
+TARGET=""        # selection, screen, window
+EDIT=false       # post-processing
+SAVE=false       # persistence
+SAVE_PATH=""     # persistence location
+SCREEN_ALL=false # target modifier
+
+# --- Helpers ---
+
+notify_error() {
+    notify-send "grimshot" "$1"
+}
+
+die() {
+    printf "grimshot: %s\n" "$1" >&2
+    exit 1
+}
+
+current_desktop() {
+    printf "%s" "${XDG_CURRENT_DESKTOP,,}"
+}
+
+ensure_dir() {
+    mkdir -p "$1"
+}
+
+build_output_path() {
+    local timestamp
+    timestamp="$(date +%Y-%m-%d_%H-%M-%S).png"
+
+    if [[ -n "$SAVE_PATH" ]]; then
+        if [[ -d "$SAVE_PATH" || "$SAVE_PATH" == */ ]]; then
+            printf "%s/%s" "${SAVE_PATH%/}" "$timestamp"
+        else
+            printf "%s" "$SAVE_PATH"
+        fi
+    else
+        printf "%s/%s" "$DEFAULT_SAVE_DIR" "$timestamp"
+    fi
+}
+
+notify_saved() {
+    local path="$1"
+    notify-send \
+        "Screenshot Captured" \
+        "Copied to clipboard and saved to:\n$path"
+}
+
+notify_clipboard_only() {
+    notify-send \
+        "Screenshot Captured" \
+        "Copied to clipboard"
+}
+
+# --- Compositor Geometry Providers ---
+
+get_geometry_hyprland() {
+    case "$1" in
+        screen)
+            if [[ "$SCREEN_ALL" == true ]]; then printf ""; return; fi
+            hyprctl monitors -j | jq -r '.[] | select(.focused == true) | .name'
+            ;;
+        monitors)
+            hyprctl monitors -j | jq -r '.[] | "\(.x),\(.y) \(.width)x\(.height)"'
+            ;;
+        window)
+            hyprctl activewindow -j | jq -r 'select(.at != null) | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"'
+            ;;
+    esac
+}
+
+get_geometry_sway() {
+    case "$1" in
+        screen)
+            if [[ "$SCREEN_ALL" == true ]]; then printf ""; return; fi
+            swaymsg -t get_outputs | jq -r '.[] | select(.focused) | .name'
+            ;;
+        monitors)
+            swaymsg -t get_outputs | jq -r '.[] | .rect | "\(.x),\(.y) \(.width)x\(.height)"'
+            ;;
+        window)
+            swaymsg -t get_tree | jq -r '.. | select(.focused? and .type == "con") | .rect | "\(.x),\(.y) \(.width)x\(.height)"'
+            ;;
+    esac
+}
+
+get_geometry_niri() {
+    case "$1" in
+        screen)
+            if [[ "$SCREEN_ALL" == true ]]; then printf ""; return; fi
+            niri msg -j outputs | jq -r '.[] | select(.is_focused == true) | .name'
+            ;;
+        monitors)
+            niri msg -j outputs | jq -r '.[] | "\(.logical.x),\(.logical.y) \(.logical.width)x\(.logical.height)"'
+            ;;
+        window)
+            return 1
+            ;;
+    esac
+}
+
+get_geometry() {
+    local target="$1"
+    local desktop
+    desktop=$(current_desktop)
+
+    case "$target" in
+        screen|window|monitors)
+            case "$desktop" in
+                hyprland) get_geometry_hyprland "$target" ;;
+                sway)     get_geometry_sway "$target"     ;;
+                niri)     get_geometry_niri "$target"     ;;
+                *)        die "Unsupported compositor: $desktop" ;;
+            esac
+            ;;
+        *) die "Unknown target: $target" ;;
+    esac
+}
+
+get_window_geometry_with_retry() {
+    local geom=""
+    local max_attempts=15
+    local retry_delay=0.02
+
+    for ((i=0; i<max_attempts; i++)); do
+        geom=$(get_geometry "window") || return 1
+        # Strip all whitespace for validation
+        if [[ -n "${geom//[[:space:]]/}" ]]; then
+            printf "%s" "$geom"
+            return 0
+        fi
+        sleep "$retry_delay"
+    done
+    return 1
+}
+
+# --- Capture Pipeline ---
+
+run_capture() {
+    local geometry="$1"
+    local tmp_file
+    tmp_file=$(mktemp --suffix=.png)
+    local desktop
+    desktop=$(current_desktop)
+
+    # Capture Phase
+    if [[ "$desktop" == "niri" && "$TARGET" == "screen" && "$SCREEN_ALL" == false ]]; then
+        niri msg screenshot "$tmp_file" || die "Niri screenshot failed"
+    elif [[ "$TARGET" == "screen" && "$SCREEN_ALL" == false ]]; then
+        if [[ -z "$geometry" ]]; then
+            rm -f "$tmp_file"
+            die "Unable to determine active monitor"
+        fi
+        grim -o "$geometry" "$tmp_file"
+    elif [[ -n "$geometry" ]]; then
+        grim -g "$geometry" "$tmp_file"
+    else
+        grim "$tmp_file"
+    fi
+
+    # Validation
+    if [[ ! -s "$tmp_file" ]]; then
+        rm -f "$tmp_file"
+        die "Capture failed or resulted in an empty image"
+    fi
+
+    # Post-processing Phase
+    if [[ "$EDIT" == true ]]; then
+        local edit_tmp
+        edit_tmp=$(mktemp --suffix=.png)
+        if swappy -f "$tmp_file" -o "$edit_tmp"; then
+            mv "$edit_tmp" "$tmp_file"
+        else
+            rm -f "$edit_tmp" "$tmp_file"
+            exit 1
+        fi
+    fi
+
+    # Persistence Phase
+    wl-copy < "$tmp_file"
+
+    if [[ "$SAVE" == true ]]; then
+        local out_path
+        out_path=$(build_output_path)
+        ensure_dir "$(dirname "$out_path")"
+        cp "$tmp_file" "$out_path"
+        notify_saved "$out_path"
+    else
+        notify_clipboard_only
+    fi
+
+    # Delay file removal slightly to ensure wl-copy handles the data
+    (sleep 2 && rm -f "$tmp_file") &
+}
+
+# --- Argument Parsing ---
+
+usage() {
+    cat <<EOF
+Usage:
+  grimshot selection [--edit] [--save [path]]
+  grimshot screen [--all] [--edit] [--save [path]]
+  grimshot window [--edit] [--save [path]]
+
+Options:
+  --edit         Open in swappy before saving
+  --save [path]  Save to disk (path can be a file or directory)
+  --all          Capture all screens (screen only)
+EOF
+}
+
+parse_args() {
+    [[ $# -lt 1 ]] && { usage; exit 1; }
+
+    TARGET="$1"
+    shift
+
+    case "$TARGET" in
+        selection|screen|window) ;;
+        *) usage; exit 1 ;;
+    esac
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --edit) EDIT=true ;;
+            --all)  SCREEN_ALL=true ;;
+            --save)
+                SAVE=true
+                if [[ -n "${2:-}" && "${2:-}" != --* ]]; then
+                    SAVE_PATH="$2"
+                    shift
+                fi
+                ;;
+            *) die "Unknown option: $1" ;;
+        esac
+        shift
+    done
+}
+
+# --- Main ---
+
+main() {
+    parse_args "$@"
+
+    local geom=""
+
+    # Phase 1: Target Resolution (Selection Intent)
+    if [[ "$TARGET" == "selection" ]]; then
+        local slurp_err
+        slurp_err=$(mktemp)
+        
+        # We pipe all monitor geometries as labeled regions to slurp.
+        # This allows slurp to return a result on single-click (monitor selection)
+        # while still permitting custom rectangle dragging (which returns no label).
+        local monitors
+        monitors=$(get_geometry "monitors" | sed 's/$/ monitor/')
+        
+        # We use -f to capture the geometry and the label
+        local raw_result
+        if ! raw_result=$(echo "$monitors" | slurp -f "%x,%y %wx%h %l" 2>"$slurp_err"); then
+            local err_msg
+            err_msg=$(cat "$slurp_err")
+            rm -f "$slurp_err"
+            
+            # Explicit cancellation (Escape)
+            if [[ "$err_msg" == *"selection cancelled"* ]]; then
+                exit 0
+            fi
+            
+            die "Selection failed: $err_msg"
+        fi
+        rm -f "$slurp_err"
+
+        # Separate geometry from label
+        geom="${raw_result% *}"
+        local label="${raw_result##* }"
+
+        # If slurp succeeded but returned only whitespace, it's an invalid selection
+        if [[ -z "${geom//[[:space:]]/}" ]]; then
+            local msg="No active selection detected"
+            notify_error "$msg"
+            die "$msg"
+        fi
+
+        # If a "monitor" label was returned, it was a click (point selection intent)
+        if [[ "$label" == "monitor" ]]; then
+            TARGET="window"
+            geom="" # Clear geometry to trigger window resolution
+        fi
+    fi
+
+    # Phase 2: Geometry Resolution
+    if [[ -z "${geom//[[:space:]]/}" ]]; then
+        if [[ "$TARGET" == "window" ]]; then
+            geom=$(get_window_geometry_with_retry) || geom=""
+        else
+            geom=$(get_geometry "$TARGET") || geom=""
+        fi
+    fi
+
+    # Phase 3: Validation
+    if [[ -z "${geom//[[:space:]]/}" && "$TARGET" != "screen" ]]; then
+         local msg="No active $TARGET detected"
+         notify_error "$msg"
+         die "$msg"
+    fi
+
+    run_capture "$geom"
+}
+
+main "$@"
