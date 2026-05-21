@@ -25,6 +25,7 @@ fi
 # 3. Core Engine (Library Loading)
 # --------------------------------------------------
 # We source utils first so tools like dep_check are available to everything else
+export SC_DEP_SILENT=true
 [[ -f "$REPO_ROOT/lib/utils.sh" ]] && source "$REPO_ROOT/lib/utils.sh"
 
 # Load remaining libraries (Functions that stay in memory)
@@ -32,6 +33,7 @@ for lib in "$REPO_ROOT/lib/"*.sh; do
     [[ "$(basename "$lib")" == "utils.sh" ]] && continue
     [[ -r "$lib" ]] && source "$lib"
 done
+unset SC_DEP_SILENT
 
 # --------------------------------------------------
 # 4. Environment & Session (Profile Loading)

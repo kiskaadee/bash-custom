@@ -88,6 +88,10 @@ validate_package_manager() {
 print_success() {
     local caller="$1"
 
+    if [[ "${SC_DEP_SILENT:-}" == "true" ]]; then
+        return
+    fi
+
     printf "%s[+] All dependencies satisfied for %s.%s\n" \
         "$GREEN" \
         "$caller" \
