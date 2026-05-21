@@ -18,8 +18,8 @@ This framework relies on several external tools. The `dep_check` utility automat
 | Category | Command | Package (Arch Linux) | Repository |
 | :--- | :--- | :--- | :--- |
 | **Core Shell** | `bash` / `zsh` | `bash` / `zsh` | `core` |
-| **CLI Essentials** | `git`, `gh`, `bc` | `git`, `github-cli`, `bc` | `extra` |
-| **Wayland/Hyprland** | `grim`, `slurp`, `swappy` | `grim`, `slurp`, `swappy` | `extra` |
+| **CLI Essentials** | `git`, `gh`, `bc`, `direnv` | `git`, `github-cli`, `bc`, `direnv` | `extra` |
+| **Wayland/Compositors** | `grim`, `slurp`, `swappy` | `grim`, `slurp`, `swappy` | `extra` |
 | | `wl-copy`, `notify-send` | `wl-clipboard`, `libnotify` | `extra` |
 | | `hyprctl`, `hyprlock` | `hyprland`, `hyprlock` | `extra` |
 | **Modern CLI Tools** | `starship`, `fastfetch` | `starship`, `fastfetch` | `extra` |
@@ -35,8 +35,8 @@ This framework relies on several external tools. The `dep_check` utility automat
 ### ⚡ Quick Start
 ```bash
 # 1. Install Core Dependencies
-sudo pacman -Syu && sudo pacman -S git github-cli bc wl-clipboard starship fastfetch eza fzf fd ripgrep bat zoxide qpdf grim slurp jq swappy libnotify hyprland neovim yazi btop wireplumber sqlite git-delta
-
+sudo pacman -Syu && sudo pacman -S git github-cli bc direnv wl-clipboard starship fastfetch eza fzf fd ripgrep bat zoxide qpdf grim slurp jq swappy libnotify hyprland neovim yazi btop wireplumber sqlite git-delta
+```
 # 2. Install AUR Dependencies (if using paru)
 paru -S tty-clock
 
