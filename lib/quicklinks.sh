@@ -1,10 +1,19 @@
 dep_check "lib/quicklinks.sh" "fzf" || return 1
 
 # 1. quicklinks: Evaluates custom commands stored in ~/.quicklinks list.
+# Supports -e or --edit to directly edit the config file in $EDITOR.
 quicklinks() {
     local CONFIG_FILE="$HOME/.quicklinks"
     local SELECTED_LINE
     local COMMAND
+
+    if [[ "$1" == "-e" || "$1" == "--edit" ]]; then
+        if [[ ! -f "$CONFIG_FILE" ]]; then
+            echo "Example | Description | echo 'Hello World'" > "$CONFIG_FILE"
+        fi
+        "${EDITOR:-nvim}" "$CONFIG_FILE"
+        return 0
+    fi
 
     if [[ ! -f "$CONFIG_FILE" ]]; then
         echo "--------------------------------------------------------"
