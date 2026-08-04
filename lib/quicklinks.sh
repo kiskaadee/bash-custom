@@ -1,13 +1,11 @@
-dep_check "lib/quicklinks.sh" "bat" "fd:fd" "fzf" || return 1
+dep_check "lib/quicklinks.sh" "fzf" || return 1
 
+# 1. quicklinks: Evaluates custom commands stored in ~/.quicklinks list.
 quicklinks() {
-    ## Borrowed logic from the ML4W suite (https://ml4w.com/)
-    # --- Configuration ---
     local CONFIG_FILE="$HOME/.quicklinks"
     local SELECTED_LINE
     local COMMAND
 
-    # 1. Check if the config file exists
     if [[ ! -f "$CONFIG_FILE" ]]; then
         echo "--------------------------------------------------------"
         echo "⚠️  Quicklinks file not found!"
@@ -15,8 +13,7 @@ quicklinks() {
         echo "Format: Name | Description | Command or Script"
         echo "--------------------------------------------------------"
         
-        # -p is used for the prompt, -n1 for a single character
-        read -p "Create a template file now? (y/n) " -n 1 -r
+        read -r -p "Create a template file now? (y/n) " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo "Example | This is a description | echo 'Hello World'" > "$CONFIG_FILE"
@@ -25,22 +22,21 @@ quicklinks() {
         return 1
     fi
 
-    # 2. UI Selection
-    # Use local to prevent SELECTED_LINE from leaking to the global shell
-    SELECTED_LINE=$(bat "$CONFIG_FILE" | fzf \
+    local cat_cmd="cat"
+    if command -v bat >/dev/null 2>&1; then
+        cat_cmd="bat"
+    fi
+
+    SELECTED_LINE=$($cat_cmd "$CONFIG_FILE" | fzf \
         --style full \
         --height 40% --layout reverse --border \
         --prompt "🚀 Quick Access: " \
         --delimiter "|" --with-nth 1..3)
 
-    # Return early if fzf is cancelled (ESC or Ctrl-C)
     [[ -z "$SELECTED_LINE" ]] && return 0
 
-    # 3. Extract Command
     COMMAND=$(echo "$SELECTED_LINE" | cut -d'|' -f3- | sed 's/^[[:space:]]*//')
 
     echo "🚀 Executing: $COMMAND"
-    
-    # eval runs the command in the current shell environment
     eval "$COMMAND"
 }
