@@ -56,6 +56,8 @@ Powered by `fzf`, `fd`, `eza`, and `yazi`.
 - `gacp "<message>"`: Add all, commit, and push to remote origin on active branch.
 - `gitignore <pattern>`: Append pattern to root `.gitignore`, commit, and push.
 - `new-repo <name>`: Create local directory, initialize git repo, create starter files, and publish via `gh` CLI.
+- `gh-remote [-f|--force] [--private] <name>`: Defensively creates a GitHub repo via `gh` CLI, binds `origin` remote, and copies URL to clipboard.
+
 
 ### 📋 Wayland Clipboard Header (`lib/wayland.sh`)
 - `wlc [--headers] <command>`: Runs command, displays output in terminal, and concurrently streams combined output into Wayland clipboard (`wl-copy`).

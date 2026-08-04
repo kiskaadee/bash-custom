@@ -93,3 +93,94 @@ new-repo() {
     gh repo create "$repo_name" --public --source=. --remote=origin --push
 }
 
+# 4. gh-remote: Defensively creates a GitHub repo via GH CLI and attaches it to current git 'origin'
+gh-remote() {
+    # Usage: gh-remote [-f|--force] [--private] <repository-name>
+    local force=false
+    local visibility="--public"
+    local repo_name=""
+
+    while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+            -f|--force)
+                force=true
+                shift
+                ;;
+            --private)
+                visibility="--private"
+                shift
+                ;;
+            --public)
+                visibility="--public"
+                shift
+                ;;
+            -h|--help)
+                echo "Usage: gh-remote [-f|--force] [--private] <repository-name>"
+                return 0
+                ;;
+            *)
+                if [[ -z "$repo_name" ]]; then
+                    repo_name="$1"
+                    shift
+                else
+                    echo "Error: Unknown argument '$1'" >&2
+                    return 1
+                fi
+                ;;
+        esac
+    done
+
+    if [[ -z "$repo_name" ]]; then
+        echo "Usage: gh-remote [-f|--force] [--private] <repository-name>" >&2
+        return 1
+    fi
+
+    # 1. Must be inside a Git repository
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        echo "Error: Current directory is not a Git repository." >&2
+        return 1
+    fi
+
+    # 2. Check existing 'origin' remote
+    local existing_origin
+    existing_origin=$(git remote get-url origin 2>/dev/null || true)
+
+    if [[ -n "$existing_origin" && "$force" != true ]]; then
+        echo "Error: Remote 'origin' is already set to '$existing_origin'." >&2
+        echo "Use -f or --force to overwrite." >&2
+        return 1
+    fi
+
+    # 3. Create remote repository using GH CLI
+    echo "Creating GitHub repository '$repo_name' ($visibility)..."
+    local repo_url
+    if ! repo_url=$(gh repo create "$repo_name" "$visibility" 2>/dev/null); then
+        echo "Error: Failed to create GitHub repository '$repo_name'." >&2
+        return 1
+    fi
+
+    if [[ -z "$repo_url" ]]; then
+        local gh_user
+        gh_user=$(gh api user --jq '.login' 2>/dev/null || true)
+        if [[ -n "$gh_user" ]]; then
+            repo_url="https://github.com/$gh_user/$repo_name.git"
+        fi
+    fi
+
+    # 4. Update or Add remote origin
+    if [[ -n "$existing_origin" && "$force" == true ]]; then
+        git remote set-url origin "$repo_url"
+        echo "✅ Updated remote 'origin' -> $repo_url"
+    else
+        git remote add origin "$repo_url"
+        echo "✅ Added remote 'origin' -> $repo_url"
+    fi
+
+    # 5. Copy URL to Wayland clipboard if available
+    if command -v wl-copy >/dev/null 2>&1 && [[ -n "$repo_url" ]]; then
+        printf "%s" "$repo_url" | wl-copy
+        echo "📋 URL copied to clipboard: $repo_url"
+    fi
+}
+
+
