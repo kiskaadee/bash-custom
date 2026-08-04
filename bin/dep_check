@@ -3,15 +3,12 @@
 # dep_check
 #
 # Verifies runtime dependencies before executing a script.
+# Distro-agnostic dependency guard supporting Arch, NixOS, Debian/Ubuntu, Fedora, Alpine, etc.
 #
 # Supports:
 # - command existence checks
 # - command:package mapping
-# - pacman/AUR package resolution
-#
-# Does not:
-# - install packages
-# - support non-Arch distributions
+# - multi-distro package manager detection and resolution
 #
 # Dependency format:
 #   command
@@ -24,8 +21,6 @@
 set -uo pipefail
 
 # --- Configuration ---
-
-: "${SC_PKG_MGR:=paru -S}"
 
 USAGE="Usage: dep_check <caller_name> <dep1> [dep2...]"
 
@@ -49,39 +44,79 @@ fi
 
 # --- Helpers ---
 
+detect_package_manager() {
+    if [[ -n "${SC_PKG_MGR:-}" ]]; then
+        echo "$SC_PKG_MGR"
+        return
+    fi
+
+    if command -v paru &>/dev/null; then
+        echo "paru -S"
+    elif command -v pacman &>/dev/null; then
+        echo "sudo pacman -S"
+    elif command -v apt &>/dev/null; then
+        echo "sudo apt install"
+    elif command -v dnf &>/dev/null; then
+        echo "sudo dnf install"
+    elif command -v zypper &>/dev/null; then
+        echo "sudo zypper install"
+    elif command -v apk &>/dev/null; then
+        echo "sudo apk add"
+    elif command -v nix-env &>/dev/null; then
+        echo "nix-env -iA"
+    else
+        echo "paru -S"
+    fi
+}
+
 pkg_exists_official() {
     local pkg="$1"
 
-    pacman -Si "$pkg" &>/dev/null
+    if command -v pacman &>/dev/null; then
+        pacman -Si "$pkg" &>/dev/null
+        return $?
+    elif command -v apt-cache &>/dev/null; then
+        apt-cache show "$pkg" &>/dev/null
+        return $?
+    elif command -v dnf &>/dev/null; then
+        dnf info "$pkg" &>/dev/null
+        return $?
+    fi
+
+    return 1
 }
 
 pkg_exists_aur() {
     local pkg="$1"
 
-    command -v paru &>/dev/null || return 1
-
-    paru -Si "$pkg" &>/dev/null
-}
-
-# Requires pacman-compatible environment (Arch-based systems)
-validate_package_manager() {
-    local mgr_bin
-
-    mgr_bin="${SC_PKG_MGR%% *}"
-
-    if ! command -v pacman &>/dev/null; then
-        printf "%s[!] pacman not found.%s\n" \
-            "$RED" \
-            "$RESET" >&2
-        return 1
+    if command -v paru &>/dev/null; then
+        paru -Si "$pkg" &>/dev/null
+        return $?
+    elif command -v yay &>/dev/null; then
+        yay -Si "$pkg" &>/dev/null
+        return $?
     fi
 
-    if ! command -v "$mgr_bin" &>/dev/null; then
-        printf "%s[!] Configured package manager not found:%s %s\n" \
-            "$RED" \
-            "$RESET" \
-            "$SC_PKG_MGR" >&2
-        return 1
+    return 1
+}
+
+
+validate_package_manager() {
+    local mgr
+    mgr="$(detect_package_manager)"
+    local mgr_bin
+    mgr_bin="${mgr%% *}"
+
+    if [[ -n "${SC_PKG_MGR:-}" ]]; then
+        if ! command -v "$mgr_bin" &>/dev/null; then
+            printf "%s[!] Configured package manager not found:%s %s\n" \
+                "$RED" \
+                "$RESET" \
+                "$SC_PKG_MGR" >&2
+            return 1
+        fi
+    else
+        SC_PKG_MGR="$mgr"
     fi
 }
 
@@ -128,9 +163,6 @@ dep_check() {
     local pkg
 
     for item in "$@"; do
-        # Parse:
-        #   command
-        #   command:package
         if [[ "$item" == *:* ]]; then
             cmd="${item%%:*}"
             pkg="${item#*:}"
@@ -139,7 +171,6 @@ dep_check() {
             pkg="$item"
         fi
 
-        # Input validation
         if [[ -z "$cmd" || -z "$pkg" ]]; then
             printf "%s[!] Invalid dependency format:%s %s\n" \
                 "$RED" \
@@ -162,7 +193,6 @@ dep_check() {
         return 0
     fi
 
-    # Missing dependencies found, now we need the package manager to suggest fixes
     {
         print_error_header "$caller"
 
@@ -209,7 +239,7 @@ dep_check() {
         if [[ "$found_all" == true ]]; then
             printf "    Fix: %s%s %s%s\n" \
                 "$GREEN" \
-                "$SC_PKG_MGR" \
+                "${SC_PKG_MGR:-$(detect_package_manager)}" \
                 "${missing_pkgs[*]}" \
                 "$RESET"
         else
@@ -235,3 +265,4 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
         exit 1
     fi
 fi
+
