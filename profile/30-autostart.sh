@@ -1,16 +1,21 @@
 # --- Shell Hooks ---
-if [ -n "$BASH_VERSION" ]; then
-    eval "$(starship init bash)"
-    eval "$(zoxide init bash)"
-    eval "$(direnv hook bash)"
-elif [ -n "$ZSH_VERSION" ]; then
-    eval "$(starship init zsh)"
-    eval "$(zoxide init zsh)"
-    eval "$(direnv hook zsh)"
+if [ -n "${BASH_VERSION:-}" ]; then
+    command -v starship >/dev/null && eval "$(starship init bash)"
+    command -v zoxide >/dev/null && eval "$(zoxide init bash)"
+    command -v direnv >/dev/null && eval "$(direnv hook bash)"
+elif [ -n "${ZSH_VERSION:-}" ]; then
+    command -v starship >/dev/null && eval "$(starship init zsh)"
+    command -v zoxide >/dev/null && eval "$(zoxide init zsh)"
+    command -v direnv >/dev/null && eval "$(direnv hook zsh)"
+fi
+
+if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
 fi
 
 # --- Visual Entry ---
-# Only run fastfetch if the shell is interactive
-if [[ $- == *i* ]]; then
+# Only run fastfetch if the shell is interactive and fastfetch is installed
+if [[ $- == *i* ]] && command -v fastfetch >/dev/null; then
     fastfetch --logo none
 fi
+
