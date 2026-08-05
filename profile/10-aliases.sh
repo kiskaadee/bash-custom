@@ -15,6 +15,7 @@ alias ...="cd ../.."
 alias ....="cd ../../.."
 alias .....="cd ../../../.."
 
+alias uvr='uv run'
 alias p5='uv run py5-run-sketch'
 alias p5w='uv run watchfiles "py5-run-sketch main.py"'
 alias pgoog="ping google.com -c 3"
