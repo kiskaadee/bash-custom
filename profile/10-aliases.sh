@@ -33,8 +33,10 @@ alias lock="hyprlock"
 alias clock="tty-clock"
 alias sys="btop" 
 alias ql="quicklinks"
-alias cd="z"
-alias zi="zoxide query -i --preview 'eza --tree --level 2 --color=always {}'"
+if command -v zoxide >/dev/null 2>&1; then
+    alias z="cd"
+    alias zi="cdi"
+fi
 
 if command -v zeditor >/dev/null 2>&1; then
     alias zed="zeditor"
