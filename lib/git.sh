@@ -1,4 +1,4 @@
-dep_check "lib/git.sh" "git" "gh:github-cli" "rg:ripgrep" || return 1
+dep_check "lib/git.sh" "git" "gh:gh" "rg:ripgrep" || return 1
 
 # 1. gitignore: Quickly appends patterns to repository's root .gitignore file
 # then automatically commits and pushes the change.

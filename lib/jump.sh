@@ -1,4 +1,4 @@
-dep_check "lib/jump.sh" "fzf" "fd:fd" "eza" "nvim:neovim" "wl-copy:wl-clipboard" "rg:ripgrep" || return 1
+dep_check "lib/jump.sh" "fzf" "fd:fd-find" "eza" "nvim:neovim" "wl-copy:wl-clipboard" "rg:ripgrep" || return 1
 
 # 1. fm: Interactive file manager wrapper using Yazi.
 # Synchronizes active shell working directory to Yazi exit folder.

@@ -20,6 +20,7 @@ alias p5='uv run py5-run-sketch'
 alias p5w='uv run watchfiles "py5-run-sketch main.py"'
 alias pgoog="ping google.com -c 3"
 alias parch="ping archlinux.org -c 3"
+alias pfed="ping fedoraproject.org -c 3"
 alias ff="fastfetch --logo none"
 # alias find="fd"
 
@@ -34,7 +35,12 @@ alias sys="btop"
 alias ql="quicklinks"
 alias cd="z"
 alias zi="zoxide query -i --preview 'eza --tree --level 2 --color=always {}'"
-alias zed="zeditor"
+
+if command -v zeditor >/dev/null 2>&1; then
+    alias zed="zeditor"
+elif command -v zed >/dev/null 2>&1; then
+    alias zeditor="zed"
+fi
 
 # EZA navigation
 alias ls="eza --icons --group-directories-first"

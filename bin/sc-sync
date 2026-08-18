@@ -22,19 +22,19 @@ printf "\033[1;34m=== Synchronizing Dotfiles & Shell Setup ===\033[0m\n"
 
 # 1. Bootstrap ~/.bashrc
 BASHRC_DST="$HOME/.bashrc"
-BASH_CUSTOM_MAIN="$CONFIG_DIR/bash-custom/main.sh"
+BASH_CUSTOM_MAIN="$CONFIG_DIR/custom-shell/main.sh"
 
 if [[ -f "$BASH_CUSTOM_MAIN" ]]; then
-    if ! grep -q "bash-custom/main.sh" "$BASHRC_DST" 2>/dev/null; then
+    if ! grep -q "custom-shell/main.sh" "$BASHRC_DST" 2>/dev/null; then
         echo "Updating $BASHRC_DST to entrypoint $BASH_CUSTOM_MAIN..."
         cat <<EOF >> "$BASHRC_DST"
 
-# --- bash-custom Framework Entry ---
+# --- custom-shell Framework Entry ---
 if [[ -f "$BASH_CUSTOM_MAIN" ]]; then
     source "$BASH_CUSTOM_MAIN"
 fi
 EOF
-        printf "\033[32m[+] Linked bash-custom entrypoint to ~/.bashrc\033[0m\n"
+        printf "\033[32m[+] Linked custom-shell entrypoint to ~/.bashrc\033[0m\n"
     else
         printf "\033[36m[=] ~/.bashrc entrypoint already configured.\033[0m\n"
     fi
@@ -44,7 +44,7 @@ else
     if [[ -f "$LEGACY_MAIN" ]] && ! grep -q "Scripts/main.sh" "$BASHRC_DST" 2>/dev/null; then
         cat <<EOF >> "$BASHRC_DST"
 
-# --- bash-custom Framework Entry ---
+# --- custom-shell Framework Entry ---
 if [[ -f "$LEGACY_MAIN" ]]; then
     source "$LEGACY_MAIN"
 fi

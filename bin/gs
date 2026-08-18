@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# gs: Executable shim for git status to override Ghostscript binary in $PATH
+exec git status "$@"
