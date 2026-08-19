@@ -97,6 +97,15 @@ git config --global alias.lg "log --graph --abbrev-commit --decorate --format=fo
 git config --global alias.standup "!git log --since='24 hours ago' --oneline --author=\"$(git config user.email)\""
 
 # --- Workflow ---
+# Fetch origin - Usage: git gfo
+git config --global alias.gfo "fetch origin"
+
+# Stash & Pull - Usage: git gsp
+git config --global alias.gsp "!git stash && git pull"
+
+# Credential Helper Store - Usage: git gcredential
+git config --global alias.gcredential "config credential.helper store"
+
 # Sync with remote repo - Usage: git sync
 git config --global alias.sync "!git fetch -p && git pull"
 
@@ -107,7 +116,8 @@ git config --global alias.main "checkout main"
 git config --global alias.last "log -1 HEAD"
 
 # Reset local branch to match remote - Usage: git nuke
-git config --global alias.nuke "!f() { git reset --hard origin/$(git rev-parse --abbrev-ref HEAD) && git clean -fd; }; f"
+git config --global alias.nuke '!f() { git reset --hard origin/$(git rev-parse --abbrev-ref HEAD) && git clean -fd; }; f'
 
 echo "--- Configuration Complete ---"
 git config --list --global
+

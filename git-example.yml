@@ -6,12 +6,28 @@ user.email: your-email@example.com
 fetch.prune: true
 column.ui: auto
 branch.sort: -committerdate
+init.defaultBranch: main
+pull.rebase: true
 
-
-# Better Diffing
+# Better Diffing & Conflict Resolution
 diff.algorithm: histogram
 diff.colorMoved: plain
 diff.mnemonicPrefix: true
+merge.conflictstyle: zdiff3
+
+# Editor
+core.editor: nvim
+
+# Delta Pager Settings
+delta.navigate: true
+delta.side-by-side: true
+delta.line-numbers: true
+delta.hyperlinks: true
+
+# Aliases
+alias.gcredential: config credential.helper store
+alias.gfo: fetch origin
+alias.gsp: "!git stash && git pull"
 
 # Security (Optional, requires GPG key)
 # commit.gpgsign: false
