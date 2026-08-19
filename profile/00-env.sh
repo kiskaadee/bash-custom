@@ -1,6 +1,7 @@
 export NIXIP="${NIXIP:-192.168.1.36}"
 export NIXURI="${NIXURI:-arch-services.mywire.org}"
-export EDITOR="${EDITOR:-nvim}"
+export EDITOR="nvim"
+export VISUAL="nvim"
 
 # ccache paths (Fedora uses /usr/lib64/ccache, Arch uses /usr/lib/ccache/bin)
 [[ -d "/usr/lib64/ccache" ]] && export PATH="/usr/lib64/ccache:$PATH"
